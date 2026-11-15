@@ -363,7 +363,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v63';
+const APP_VERSION='v64';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -956,10 +956,9 @@ function wishCard(b){
   <button class="btn sm" style="margin-top:6px" onclick="rerollWish()">🎲 같은 맛, 다른 표현으로</button>
   <label class="f">맛 세기 <span class="sub">(문장을 쓰면 막대가, 막대를 움직이면 문장이 맞춰져요)</span></label>
   ${WISH.map(([k,n])=>{const v=w[k]||3;return `<div class="prof"><span>${n}</span><input type="range" min="1" max="5" step="1" data-w="${k}" value="${v}"><span class="v" id="wv-${k}">${lv[v]}</span></div>`}).join('')}
-  <button class="btn pri block" onclick="doRecommend()">✨ 추천 배합 받기</button>
-  <button class="btn block" onclick="saveTargetOnly()">🎯 추천 없이 이 맛을 목표로만 기록</button>
-  ${b.target&&wishDiffers(b)?'<div class="wdiff">⚠️ 지금 입력한 맛이 오른쪽 <b>목표한 맛</b>과 달라요. 추천 배합을 <b>계산기에 반영</b>하거나 🎯 버튼을 눌러야 목표가 바뀌어요.</div>':''}
-  <p class="sub" style="font-size:12px;margin:6px 2px 0">추천 배합을 계산기에 반영하면 원하는 맛이 <b>목표한 맛</b>으로 자동 기록돼요. 나중에 맛 평가와 비교해 볼 수 있어요.</p>
+  <button class="btn pri block" onclick="doRecommend()">✨ 배합 추천 받기</button>
+  ${b.target&&wishDiffers(b)?'<div class="wdiff">⚠️ 지금 입력한 맛이 오른쪽 <b>목표한 맛</b>과 달라요. 배합 추천을 다시 받아 <b>배합 계산기에 반영</b>하거나, Claude 답을 <b>배합 계산기에 자동 반영</b>하면 목표가 바뀌어요.</div>':''}
+  <p class="sub" style="font-size:12px;margin:6px 2px 0"><b>배합 계산기에 반영</b>(또는 Claude 답을 <b>자동 반영</b>)하면 지금 맛 세기가 <b>목표한 맛</b>으로 자동 기록돼요. 나중에 맛 평가와 비교해 볼 수 있어요.</p>
   ${r?`<div class="rec"><div class="rh">추천 배합</div>
     <div class="rgrid"><div><small>종류</small><b>${r.type}</b></div><div><small>물:가수</small><b>${r.water}:${r.dil}</b></div><div><small>쌀</small><b>${r.riceKind==='chap'?'찹쌀':'멥쌀'}</b></div><div><small>누룩</small><b>${r.nuruk}%</b></div><div><small>입국</small><b>${r.ipguk}%</b></div></div>
     
