@@ -363,7 +363,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v66';
+const APP_VERSION='v67';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -1089,7 +1089,9 @@ function autoName(b){
 
 /* ---------- tasting ---------- */
 let CT=null;
-function newTasting(){if(CUR.locked){toast('🔒 잠긴 기록이에요. 잠금을 풀고 추가해 주세요');return}const t={id:uid(),date:today(),profile:{},quality:{},aromas:[],offs:[],memo:'',improve:''};CUR.tastings.push(t);touch();go(`t-${CUR.id}-${t.id}`)}
+// 맛 프로필 기본값: 모두 '보통'(3)
+function defaultProfile(){const o={};PROFILE.forEach(([k])=>o[k]=3);return o}
+function newTasting(){if(CUR.locked){toast('🔒 잠긴 기록이에요. 잠금을 풀고 추가해 주세요');return}const t={id:uid(),date:today(),profile:defaultProfile(),quality:{},aromas:[],offs:[],memo:'',improve:''};CUR.tastings.push(t);touch();go(`t-${CUR.id}-${t.id}`)}
 function regenAdvice(){if(!CT)return;CT.improveAuto=true;CT.improve='';refreshAdvice();touch();renderTasting(CUR,CT);toast(CT.improve?'다음엔 이렇게를 새로 채웠어요':'맛 프로필을 입력하면 추천돼요')}
 function renderTasting(b,t){
   CUR=b;CT=t;refreshAdvice();document.body.dataset.view='tasting';const s=tScore(t);const age=days(b.chaeju.date,t.date);
@@ -1101,7 +1103,8 @@ function renderTasting(b,t){
   QUALITY.forEach(q=>{const v=t.quality[q.k]||0;
     h+=`<div class="qitem"><div class="qh">${q.n}<small>가중치 ${q.w}</small></div><div class="dots">${[1,2,3,4,5].map(n=>`<button class="${v===n?'on':''}" onclick="setQ('${q.k}',${n})">${n}</button>`).join('')}</div><div class="desc">${v?q.d[v]:'점수를 눌러 주세요'}</div></div>`});
   h+=`</div></div><div class="colR"><div class="card"><h2>② 맛 프로필 <span class="sub">(강도 · 점수 아님)</span></h2>`;
-  PROFILE.forEach(([k,n])=>{const v=t.profile[k]||3;h+=`<div class="prof"><span>${n}</span><input type="range" min="1" max="5" step="1" data-p="${k}" value="${v}"><span class="v" id="pv-${k}">${t.profile[k]?LEVEL[v]:'미입력'}</span></div>`});
+  t.profile=t.profile||{};PROFILE.forEach(([k])=>{if(!t.profile[k])t.profile[k]=3});
+  PROFILE.forEach(([k,n])=>{const v=t.profile[k]||3;h+=`<div class="prof"><span>${n}</span><input type="range" min="1" max="5" step="1" data-p="${k}" value="${v}"><span class="v" id="pv-${k}">${LEVEL[v]}</span></div>`});
   h+=`</div><div class="card"><h2>③ 향 특징</h2><div class="chips">${AROMAS.map(a=>chip('aromas',a,t)).join('')}</div>
   <div class="grp" style="color:var(--bad)">이취 (나쁜 냄새·맛)</div><div style="height:6px"></div><div class="chips off">${OFFS.map(a=>chip('offs',a,t)).join('')}</div></div>
   <div class="card"><label class="f">시음 메모</label><textarea data-t="memo" placeholder="첫인상, 페어링한 음식 등">${esc(t.memo)}</textarea>
