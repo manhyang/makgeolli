@@ -344,7 +344,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v57';
+const APP_VERSION='v58';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -680,7 +680,7 @@ function planCard(b){
   <label class="f">물 : 가수 비율 <span class="sub">(쌀 총량 대비 %)</span></label>
   <div class="seg ratio">${PRESETS.map(([w,d])=>`<button class="${+p.water===w&&+p.dil===d?'on':''}" onclick="setRatio(${w},${d})">${w}:${d}</button>`).join('')}</div>
   <div class="grid2">${field('빚을 때 물 (직접 입력)','plan.water','number','%')}${field('가수 물 (직접 입력)','plan.dil','number','%')}</div>
-  <div class="grid2">${field('누룩','plan.nuruk','number','%','step="0.1"')}${field('입국','plan.ipguk','number','%','step="0.1"')}</div>
+  <div class="grid2">${field('누룩','plan.nuruk','number','%','step="0.1"')}${field('입국 (안 쓰면 비워 두세요)','plan.ipguk','number','%','step="0.1" placeholder="0"')}</div>
   <p class="sub" style="margin:6px 0 0">물·누룩·입국 배분: 단양주·이양주는 밑술에만 · 삼양주부터는 밑술 2 : 2차 덧술 1</p>
   <label class="f">쌀 종류</label>${segBtns('riceKind',[['mep','멥쌀'],['chap','찹쌀']],p.riceKind)}
   <label class="f">물 종류</label>${segBtns('waterKind',WATER_KINDS,p.waterKind)}
@@ -699,7 +699,7 @@ function computePlan(b){
   const igA=splitWeighted(ig,WATER_RATIO[b.type]||[1],n);
   return {act,rice:riceA,water:waterA,nuruk:nkA,ipguk:igA,dil:r10(rice*num(p.dil)/100),total:rice};
 }
-function planMissing(b){const p=b.plan||{},m=[];if(!TYPES.includes(b.type))m.push('술 종류');if(p.water===''||p.dil==='')m.push('물:가수 비율');if(p.nuruk===''||p.ipguk==='')m.push('누룩·입국 %');if(!p.riceKind)m.push('쌀 종류');if(!p.waterKind)m.push('물 종류');return m}
+function planMissing(b){const p=b.plan||{},m=[];if(!TYPES.includes(b.type))m.push('술 종류');if(p.water===''||p.dil==='')m.push('물:가수 비율');if(p.nuruk===''||p.nuruk==null)m.push('누룩 %');if(!p.riceKind)m.push('쌀 종류');if(!p.waterKind)m.push('물 종류');return m}
 function refreshPlan(){
   const el=$('#planPrev');if(!el)return;const miss=planMissing(CUR);if(miss.length){el.innerHTML=`<div class="sub">${miss.join(', ')}을(를) 고르면 미리보기가 나와요. 위에서 추천 배합을 반영하면 자동으로 선택돼요.</div>`;return}const c=computePlan(CUR);
   if(!c.total){el.innerHTML='<div class="sub">쌀 총량을 입력하면 미리보기가 나와요.</div>';return}
