@@ -363,7 +363,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v65';
+const APP_VERSION='v66';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -372,7 +372,7 @@ const DEFAULT_EMAIL='';
 const TYPES=['단양주','이양주','삼양주','사양주','오양주'];
 const STAGES=[{k:'mit',n:'밑술'},{k:'d1',n:'1차 덧술'},{k:'d2',n:'2차 덧술'},{k:'d3',n:'3차 덧술'},{k:'d4',n:'4차 덧술'}];
 const COUNT={'단양주':1,'이양주':2,'삼양주':3,'사양주':4,'오양주':5};
-const PROFILE=[['sweet','단맛'],['sour','신맛'],['bitter','쓴맛'],['alcohol','알코올감'],['body','바디감']];
+const PROFILE=[['sweet','단맛'],['sour','신맛'],['bitter','쓴맛'],['body','바디감'],['alcohol','알코올감']];
 const LEVEL=['','거의 없음','약함','보통','강함','매우 강함'];
 const QUALITY=[
  {k:'look',n:'외관 (색·탁도)',w:10,d:['','탁하고 변색·이물감이 있음','색이 칙칙하거나 층 분리가 심함','무난한 색과 탁도','맑은 미색, 탁도가 고름','윤기 있는 고운 미색, 균일하고 깔끔함']},
@@ -1122,7 +1122,7 @@ function renderGuide(){
   <p style="margin:0 0 6px"><b>① 품질 평가</b> — 각 항목 1~5점 × 가중치 → 100점 환산</p>`;
   QUALITY.forEach(q=>{h+=`<p style="margin:12px 0 4px;font-weight:700">${q.n} <span class="sub">(가중치 ${q.w})</span></p><table>${[5,4,3,2,1].map(n=>`<tr><td>${n}</td><td>${q.d[n]}</td></tr>`).join('')}</table>`});
   h+=`<p style="margin:16px 0 4px"><b>등급</b></p><table><tr><td>90+</td><td>최상</td></tr><tr><td>80+</td><td>우수</td></tr><tr><td>70+</td><td>양호</td></tr><tr><td>60+</td><td>보통</td></tr><tr><td>~59</td><td>개선 필요</td></tr></table>
-  <p style="margin:16px 0 4px"><b>② 맛 프로필</b> — 좋고 나쁨이 아니라 <b>얼마나 강한지</b>만 기록해요 (1 거의 없음 ~ 5 매우 강함). 단맛·신맛·쓴맛·알코올감·바디감. 술마다 스타일을 비교할 때 써요.</p>
+  <p style="margin:16px 0 4px"><b>② 맛 프로필</b> — 좋고 나쁨이 아니라 <b>얼마나 강한지</b>만 기록해요 (1 거의 없음 ~ 5 매우 강함). 단맛·신맛·쓴맛·바디감·알코올감. 술마다 스타일을 비교할 때 써요.</p>
   <p style="margin:12px 0 4px"><b>③ 향·이취</b> — 느껴지는 것을 모두 체크해요. 이취가 반복되면 원인을 의심해 볼 수 있어요.</p>
   <table><tr><td>🍋</td><td>식초 같은 시큼함 → 초산균 오염, 발효 온도 과다·산소 노출</td></tr><tr><td>🧪</td><td>쿰쿰한 효모취 → 과발효, 채주가 늦음</td></tr><tr><td>🍄</td><td>흙·곰팡이 냄새 → 누룩 상태, 용기 위생</td></tr><tr><td>🌾</td><td>생쌀·풋내 → 쌀이 덜 익음(고두밥 찌기 부족)</td></tr><tr><td>🔥</td><td>알코올 화끈거림 → 고온 발효, 숙성 부족</td></tr></table></div>`;
   $('#app').innerHTML=h;window.scrollTo(0,0);
