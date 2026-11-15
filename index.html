@@ -349,7 +349,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v60';
+const APP_VERSION='v61';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -947,7 +947,7 @@ function wishCard(b){
   <p class="sub" style="font-size:12px;margin:6px 2px 0">추천 배합을 계산기에 반영하면 원하는 맛이 <b>목표한 맛</b>으로 자동 기록돼요. 나중에 맛 평가와 비교해 볼 수 있어요.</p>
   ${r?`<div class="rec"><div class="rh">추천 배합</div>
     <div class="rgrid"><div><small>종류</small><b>${r.type}</b></div><div><small>물:가수</small><b>${r.water}:${r.dil}</b></div><div><small>쌀</small><b>${r.riceKind==='chap'?'찹쌀':'멥쌀'}</b></div><div><small>누룩</small><b>${r.nuruk}%</b></div><div><small>입국</small><b>${r.ipguk}%</b></div></div>
-    <div class="sub" style="font-size:12px;margin-bottom:4px">예상 맛 (막대가 길수록 강함)</div><div class="rpred">${WISH.map(([k,n])=>`<span>${n} <i style="width:${(r.pred[k]/5*100).toFixed(0)}%"></i></span>`).join('')}</div>
+    
     <ul>${(r.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
     <button class="btn pri block" onclick="applyRec()">⬇️ 배합 계산기에 반영</button>
     <p class="sub" style="font-size:12px;margin:8px 0 0">일반적인 가양주 경향과 내 맛 평가 기록으로 계산한 참고용 추천이에요. 인터넷 없이 폰 안에서 계산해요.</p></div>`:''}
