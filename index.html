@@ -179,7 +179,8 @@ details.fold[open]>summary{margin-bottom:6px}
 .rec ul{margin:6px 0 10px;padding-left:18px;font-size:13px}
 .rec li{margin:3px 0}
 .askc{margin-top:14px;border-top:1px solid #ebe0c4;padding-top:12px}
-.askh{font-weight:700;margin-bottom:6px}.askh span{font-weight:400;font-size:12px;color:var(--sub)}
+.askh{font-weight:700;margin-bottom:6px;cursor:pointer}
+details.askc:not([open]) .askh{margin-bottom:0}.askh span{font-weight:400;font-size:12px;color:var(--sub)}
 .bigstep{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px}
 .bigstep b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.12);font-size:13px}
 .btn.pri.bigstep b{background:rgba(255,255,255,.25)}
@@ -348,7 +349,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v59';
+const APP_VERSION='v60';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -950,14 +951,14 @@ function wishCard(b){
     <ul>${(r.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
     <button class="btn pri block" onclick="applyRec()">⬇️ 배합 계산기에 반영</button>
     <p class="sub" style="font-size:12px;margin:8px 0 0">일반적인 가양주 경향과 내 맛 평가 기록으로 계산한 참고용 추천이에요. 인터넷 없이 폰 안에서 계산해요.</p></div>`:''}
-  <div class="askc"><div class="askh">💬 Claude에게 물어보기 <span>(인터넷 필요)</span></div>
+  <details class="askc"><summary class="askh">💬 Claude에게 물어보기 <span>(인터넷 필요)</span></summary>
     <button class="btn block bigstep" onclick="askClaude()"><b>1</b> Claude에게 물어보기</button>
     <p class="sub hint">Claude가 열리고 질문이 채워져 있어요. <b>보내기</b>만 누르세요.<br>답이 오면 코드 칸 오른쪽 위 <b>복사</b> 버튼을 누르고 돌아오세요.</p>
     <button class="btn block bigstep" onclick="pasteClaude()"><b>2</b> 📥 받은 답 붙여넣기</button>
     <textarea id="aiAns" placeholder="붙여넣은 답이 여기에 나와요 (안 되면 여기를 길게 눌러 붙여넣기)" style="margin-top:8px;min-height:80px;font-size:13px"></textarea>
     <div id="aiPrev" class="aiprev"></div>
     <button class="btn pri block bigstep" onclick="applyAiBtn()"><b>3</b> ✅ 배합 계산기에 자동 반영</button>
-  </div>
+  </details>
   </details></div>`;
 }
 function askText(b){
