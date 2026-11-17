@@ -242,6 +242,7 @@ i.act{background:var(--acc);border:2px solid #fff;box-sizing:border-box;box-shad
 .phgrid small{display:block;font-size:12px;color:var(--sub);margin:4px 0}
 .phbtns{display:flex;gap:4px}
 .rwrow{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:8px}
+.rwrow.rw3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .rwrow .seg{gap:4px}.rwrow .seg button{font-size:13.5px;padding:9px 0}
 .ptaste{background:#fff;border:1px solid #ebe0c4;border-radius:14px;padding:12px;margin-top:12px}
 .lvl{margin:6px 0 4px}
@@ -363,7 +364,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v67';
+const APP_VERSION='v69';
 const APP_DATE='2026.11.15';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -701,7 +702,7 @@ function planCard(b){
   <div class="grid2">${field('빚을 때 물 (직접 입력)','plan.water','number','%')}${field('가수 물 (직접 입력)','plan.dil','number','%')}</div>
   <div class="grid2">${field('누룩','plan.nuruk','number','%','step="0.1"')}${field('입국 (안 쓰면 비워 두세요)','plan.ipguk','number','%','step="0.1" placeholder="0"')}</div>
   <p class="sub" style="margin:6px 0 0">물·누룩·입국 배분: 단양주·이양주는 밑술에만 · 삼양주부터는 밑술 2 : 2차 덧술 1</p>
-  <div class="rwrow"><div><label class="f">쌀 종류</label>${segBtns('riceKind',[['mep','멥쌀'],['chap','찹쌀']],p.riceKind)}</div><div><label class="f">물 종류</label>${segBtns('waterKind',WATER_KINDS,p.waterKind)}</div></div>
+  <div class="rwrow rw3"><div><label class="f">쌀 종류</label>${segBtns('riceKind',[['mep','멥쌀'],['chap','찹쌀'],['mix','멥+찹']],p.riceKind)}</div><div><label class="f">물 종류</label>${segBtns('waterKind',WATER_KINDS,p.waterKind)}</div></div>
   ${field('쌀 총량','plan.rice','number','g','placeholder="예: 3000"')}
   <div id="planTaste"></div>
   <div id="planPrev" style="margin-top:10px"></div>
@@ -709,14 +710,22 @@ function planCard(b){
   <p class="sub" style="margin:6px 0 0">입력 후에도 각 단계 칸에서 직접 고칠 수 있어요.</p></details></div>`;
 }
 function splitEven(total,n){total=Math.round(total);const base=Math.floor(total/n);const a=Array(n).fill(base);a[0]+=total-base*n;return a}
+// 쌀 종류: 멥쌀 / 찹쌀 / 멥쌀+찹쌀(2:1, 찹쌀은 맨 마지막 덧술에)
+const RK_NAME={mep:'멥쌀',chap:'찹쌀',mix:'멥쌀+찹쌀'};
+const rkNorm=v=>['mep','chap','mix'].includes(v)?v:'chap';
 function computePlan(b){
   const p=b.plan,act=activeStages(b),n=act.length,rice=num(p.rice);
   const nk=rice*num(p.nuruk)/100,ig=rice*num(p.ipguk)/100;
-  const riceA=splitWeighted(rice,Array(n).fill(1),n,10),waterA=splitWeighted(rice*num(p.water)/100,WATER_RATIO[b.type]||[1],n,10);
+  let riceA=splitWeighted(rice,Array(n).fill(1),n,10),mepA=null,chapA=null;
+  // 멥+찹: 단계별 쌀은 균등 배분, 찹쌀(총량의 1/3)은 맨 마지막 단계부터 채우고 넘치면 직전 단계로
+  if(p.riceKind==='mix'){let left=r10(riceA.reduce((a,x)=>a+x,0)/3);chapA=Array(n).fill(0);
+    for(let i=n-1;i>=0&&left>0;i--){const c=Math.min(left,riceA[i]);chapA[i]=c;left-=c}
+    mepA=riceA.map((v,i)=>v-chapA[i])}
+  const waterA=splitWeighted(rice*num(p.water)/100,WATER_RATIO[b.type]||[1],n,10);
   // 누룩·입국도 물과 같은 방식으로 배분
   const nkA=splitWeighted(nk,WATER_RATIO[b.type]||[1],n);
   const igA=splitWeighted(ig,WATER_RATIO[b.type]||[1],n);
-  return {act,rice:riceA,water:waterA,nuruk:nkA,ipguk:igA,dil:r10(rice*num(p.dil)/100),total:rice};
+  return {act,rice:riceA,mep:mepA,chap:chapA,water:waterA,nuruk:nkA,ipguk:igA,dil:r10(rice*num(p.dil)/100),total:rice};
 }
 /* 직접 입력한 배합의 예상 맛 (추천을 거치지 않았을 때) */
 function planRecipe(b){const p=b.plan||{};if(!TYPES.includes(b.type)||p.water===''||p.dil===''||p.nuruk===''||p.nuruk==null||!p.riceKind)return null;
@@ -744,9 +753,10 @@ function refreshPlan(){
   const el=$('#planPrev');if(!el)return;const miss=planMissing(CUR);if(miss.length){el.innerHTML=`<div class="sub">${miss.join(', ')}을(를) 고르면 미리보기가 나와요. 위에서 추천 배합을 반영하면 자동으로 선택돼요.</div>`;return}const c=computePlan(CUR);
   if(!c.total){el.innerHTML='<div class="sub">쌀 총량을 입력하면 미리보기가 나와요.</div>';return}
   const td='style="text-align:right;padding:4px 6px;border-top:1px solid var(--line)"';
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--sub)"><td></td><td ${td}>${CUR.plan.riceKind==='chap'?'찹쌀':'멥쌀'} g</td><td ${td}>${WK_NAME[CUR.plan.waterKind]||'생수'} ml</td><td ${td}>누룩 g</td><td ${td}>입국 g</td></tr>
-  ${c.act.map((s,i)=>`<tr><td style="padding:4px 0;border-top:1px solid var(--line)">${s.n}</td><td ${td}>${fmt(c.rice[i])}</td><td ${td}>${fmt(c.water[i])}</td><td ${td}>${fmt(c.nuruk[i])}</td><td ${td}>${fmt(c.ipguk[i])}</td></tr>`).join('')}
-  <tr><td style="padding:4px 0;border-top:1px solid var(--line)">채주 가수</td><td ${td}></td><td ${td}>${fmt(c.dil)}</td><td ${td}></td><td ${td}></td></tr></table>
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--sub)"><td></td>${c.mep?`<td ${td}>멥쌀 g</td><td ${td}>찹쌀 g</td>`:`<td ${td}>${RK_NAME[CUR.plan.riceKind]} g</td>`}<td ${td}>${WK_NAME[CUR.plan.waterKind]||'생수'} ml</td><td ${td}>누룩 g</td><td ${td}>입국 g</td></tr>
+  ${c.act.map((s,i)=>`<tr><td style="padding:4px 0;border-top:1px solid var(--line)">${s.n}</td>${c.mep?`<td ${td}>${fmt(c.mep[i])}</td><td ${td}>${fmt(c.chap[i])}</td>`:`<td ${td}>${fmt(c.rice[i])}</td>`}<td ${td}>${fmt(c.water[i])}</td><td ${td}>${fmt(c.nuruk[i])}</td><td ${td}>${fmt(c.ipguk[i])}</td></tr>`).join('')}
+  <tr><td style="padding:4px 0;border-top:1px solid var(--line)">채주 가수</td>${c.mep?`<td ${td}></td>`:''}<td ${td}></td><td ${td}>${fmt(c.dil)}</td><td ${td}></td><td ${td}></td></tr></table>
+  ${c.mep?`<div class="sub" style="margin-top:4px">멥쌀:찹쌀 = 2:1 · 단계별 쌀은 균등하게, 찹쌀은 맨 마지막 단계부터 넣고 넘치면 직전 단계에 넣어요</div>`:''}
   <div class="sub" style="margin-top:4px">물 총량 (빚을 때 + 가수): ${fmt(c.water.reduce((a,x)=>a+x,0)+c.dil)} ml</div>`;
 }
 /* ---------- 원하는 술맛 → 배합 추천 ---------- */
@@ -755,7 +765,7 @@ const TIDX={'단양주':0,'이양주':1,'삼양주':2,'사양주':3,'오양주':
 const clamp=v=>Math.max(1,Math.min(5,v));
 // 일반적인 가양주 경향을 단순화한 추정 모델 (1~5)
 function predict(c){
-  const t=TIDX[c.type]-1,w=(75-c.water)/10,d=(c.dil-45)/15,ch=c.riceKind==='chap'?1:0,n=c.nuruk-9,g=c.ipguk;
+  const t=TIDX[c.type]-1,w=(75-c.water)/10,d=(c.dil-45)/15,ch=c.riceKind==='chap'?1:c.riceKind==='mix'?0.6:0,n=c.nuruk-9,g=c.ipguk;
   return {
     sweet:clamp(3+0.8*ch+0.4*t+0.6*w-0.5*d-0.2*n),
     sour:clamp(3-0.5*w+0.35*g+0.25*n-0.3*t+0.2*d),
@@ -805,13 +815,13 @@ function syncTextFromSliders(){const w=CUR.wish;w.text=wishSentence(w);const ta=
 function wishTarget(b){const w=Object.assign({sweet:3,sour:3,body:3,alcohol:3,aroma:3},b.wish||{});const t={};WISH.forEach(([k])=>t[k]=Number(w[k]));return t}
 function pastParams(o){const c=calc(o),p=o.plan;
   const r=p&&p.applied?{water:num(p.water),dil:num(p.dil)}:(c.rice?{water:Math.round(c.water/c.rice*10)*10,dil:Math.round(c.dil/c.rice*10)*10}:null);
-  if(!r)return null;return {type:o.type,water:r.water,dil:r.dil,riceKind:c.chap>=c.mep?'chap':'mep'}}
+  if(!r)return null;return {type:o.type,water:r.water,dil:r.dil,riceKind:c.chap&&c.mep?'mix':c.chap>=c.mep?'chap':'mep'}}
 function historyBonus(b){
   const m=[];state.batches.forEach(o=>{if(o===b)return;const sc=o.tastings.map(tScore).filter(x=>x.done).map(x=>x.score);if(!sc.length)return;const pp=pastParams(o);if(pp)m.push({...pp,score:Math.max(...sc),name:o.name})});return m;
 }
 function recommend(b){
   const tg=wishTarget(b),hist=historyBonus(b);let best=null;
-  TYPES.forEach(type=>PRESETS.forEach(([water,dil])=>['chap','mep'].forEach(riceKind=>[8,9,10].forEach(nuruk=>[0,1,2].forEach(ipguk=>{
+  TYPES.forEach(type=>PRESETS.forEach(([water,dil])=>['chap','mep','mix'].forEach(riceKind=>[8,9,10].forEach(nuruk=>[0,1,2].forEach(ipguk=>{
     const c={type,water,dil,riceKind,nuruk,ipguk},pr=predict(c);
     let d=WISH.reduce((a,[k])=>a+(pr[k]-tg[k])**2,0);
     d+=0.05*(Math.abs(nuruk-9)+Math.abs(ipguk-1))+0.03*Math.abs(TIDX[type]-2);
@@ -822,7 +832,7 @@ function recommend(b){
 }
 function reasons(r){
   const a=[];const tg=r.target;
-  a.push(r.riceKind==='chap'?'찹쌀: 단맛과 바디감(무게감)을 올려줘요':'멥쌀: 단맛이 덜하고 깔끔·가벼운 쪽이에요');
+  a.push(r.riceKind==='chap'?'찹쌀: 단맛과 바디감(무게감)을 올려줘요':r.riceKind==='mix'?'멥쌀+찹쌀(2:1): 깔끔함을 바탕으로, 마지막 덧술의 찹쌀이 단맛과 부드러움을 더해요':'멥쌀: 단맛이 덜하고 깔끔·가벼운 쪽이에요');
   a.push(TIDX[r.type]>=2?`${r.type}: 덧술을 거듭할수록 도수와 깊은 맛, 부드러움이 올라가요`:`${r.type}: 기간이 짧고 가볍고 산뜻한 쪽이에요`);
   a.push(r.water<=70?`빚을 때 물 ${r.water}%: 물이 적어 진하고 달게 나오는 편이에요`:r.water>=90?`빚을 때 물 ${r.water}%: 물이 많아 가볍고 드라이, 산미가 생기기 쉬워요`:`빚을 때 물 ${r.water}%: 중간 정도의 농도예요`);
   a.push(r.dil>=55?`가수 ${r.dil}%: 많이 타서 도수가 낮고 가볍게 마시기 좋아요`:r.dil<=40?`가수 ${r.dil}%: 적게 타서 도수와 바디감이 유지돼요`:`가수 ${r.dil}%: 무난한 도수로 맞춰요`);
@@ -863,7 +873,7 @@ function targetHtml(b,t,compact){
   const T=b.target;if(!T)return '';const cmp=compareTarget(b,t);
   return `<div class="tgt"><div class="tgh"><b>🎯 목표한 맛</b><span>${T.at.replace(/-/g,'.')} · ${esc(T.src)}</span></div>
   ${T.text?`<div class="tgtxt">“${esc(T.text)}”</div>`:''}
-  ${T.rec&&!compact?`<div class="sub" style="font-size:12px;margin:4px 0">당시 배합: ${T.rec.type} · ${T.rec.water}:${T.rec.dil} · ${T.rec.riceKind==='mep'?'멥쌀':'찹쌀'} · 누룩 ${T.rec.nuruk}% · 입국 ${T.rec.ipguk}%</div>`:''}
+  ${T.rec&&!compact?`<div class="sub" style="font-size:12px;margin:4px 0">당시 배합: ${T.rec.type} · ${T.rec.water}:${T.rec.dil} · ${RK_NAME[T.rec.riceKind]||''} · 누룩 ${T.rec.nuruk}% · 입국 ${T.rec.ipguk}%</div>`:''}
   ${compact?'<div class="tgflex"><div>':''}<div class="tgrows">${cmp.rows.map(r=>`<div class="tgr"><span>${r.n}</span><div class="tgbar"><i class="goal" style="left:calc(${(r.goal-1)/4*100}% - 6px)" title="목표"></i>${r.act!=null?`<i class="act" style="left:calc(${(r.act-1)/4*100}% - 6px)" title="실제"></i>`:''}</div><em class="${r.verdict==='적중'?'ok':r.verdict?'off':''}">${r.verdict||TLV[Math.round(r.goal)]}</em></div>`).join('')}</div>
   <div class="tglg"><span><i class="goal"></i>목표</span><span><i class="act"></i>실제${cmp.t&&!compact?` (${cmp.t.date.slice(5).replace('-','/')} 평가)`:''}</span>${cmp.hit!=null?`<b>${hitLabel(cmp.hit)} · ${cmp.hit}%</b>`:`<span class="sub">${compact?'맛 프로필을 입력하면 비교돼요':'맛 평가에서 맛 프로필을 입력하면 비교돼요'}</span>`}</div>${compact?`</div><div class="tgph"><div class="duo"><div class="pol p1">${photoTag(2,'','딸들 사진 1')}</div><div class="pol p2">${photoTag(3,'','딸들 사진 2')}</div></div><div class="duocap">아빠 항상 응원해요 <span class="heart">❤️</span></div></div></div>`:''}</div>`;
 }
@@ -884,14 +894,14 @@ function adviceFor(b,t){
   const cur=recipeOf(b);[cur.water,cur.dil]=snapPreset(cur.water,cur.dil);
   const pc=predict(cur),bias={};cmp.rows.forEach(r=>{if(r.act!=null)bias[r.k]=r.act-pc[r.k]});
   const goal=b.target.levels,ti=TIDX[cur.type];let best=null;
-  TYPES.filter(x=>Math.abs(TIDX[x]-ti)<=1).forEach(type=>PRESETS.forEach(([water,dil])=>['chap','mep'].forEach(riceKind=>[8,9,10].forEach(nuruk=>[0,1,2].forEach(ipguk=>{
+  TYPES.filter(x=>Math.abs(TIDX[x]-ti)<=1).forEach(type=>PRESETS.forEach(([water,dil])=>['chap','mep','mix'].forEach(riceKind=>[8,9,10].forEach(nuruk=>[0,1,2].forEach(ipguk=>{
     const c={type,water,dil,riceKind,nuruk,ipguk},pr=predict(c);
     let d=0;WISH.forEach(([k])=>{const v=clamp(pr[k]+(bias[k]||0));d+=(v-goal[k])**2});
     d+=0.03*((type!==cur.type)+(water!==cur.water)+(dil!==cur.dil)+(riceKind!==cur.riceKind)+(nuruk!==cur.nuruk)+(ipguk!==cur.ipguk));
     if(!best||d<best.d)best={...c,d}})))));
-  const ch=[];const nm=k=>k==='chap'?'찹쌀':'멥쌀';
+  const ch=[];const nm=k=>RK_NAME[k]||k;
   if(best.type!==cur.type)ch.push(`${cur.type} → ${best.type}: ${TIDX[best.type]>ti?'덧술을 한 번 더 해서 도수·깊은 맛·단맛을 올려요':'덧술을 줄여 가볍고 산뜻하게 가요'}`);
-  if(best.riceKind!==cur.riceKind)ch.push(`${nm(cur.riceKind)} → ${nm(best.riceKind)}: ${best.riceKind==='chap'?'단맛과 바디감을 올려요':'단맛·무게감을 줄여 깔끔하게 가요'}`);
+  if(best.riceKind!==cur.riceKind)ch.push(`${nm(cur.riceKind)} → ${nm(best.riceKind)}: ${best.riceKind==='chap'?'단맛과 바디감을 올려요':best.riceKind==='mix'?'깔끔함에 단맛·부드러움을 조금 더해요':'단맛·무게감을 줄여 깔끔하게 가요'}`);
   if(best.water!==cur.water)ch.push(`빚을 때 물 ${cur.water} → ${best.water}%: ${best.water<cur.water?'더 진하고 달게':'더 가볍고 드라이하게'}`);
   if(best.dil!==cur.dil)ch.push(`가수 ${cur.dil} → ${best.dil}%: ${best.dil<cur.dil?'도수와 바디감을 지켜요':'도수를 낮추고 가볍게 해요'}`);
   if(best.ipguk!==cur.ipguk)ch.push(`입국 ${cur.ipguk} → ${best.ipguk}%: 산미를 ${best.ipguk>cur.ipguk?'올려요':'줄여요'}`);
@@ -906,7 +916,7 @@ function adviceText(a){
   if(!a)return '';
   if(a.ok)return '🎯 목표한 맛에 적중했어요! 다음에도 이번 배합을 그대로 써 보세요.';
   const r=a.next;
-  return `🔁 목표와 차이: ${a.off.map(x=>x.n+' '+x.verdict).join(', ')}\n👉 다음 배합 제안: ${r.type} · ${r.water}:${r.dil} · ${r.riceKind==='chap'?'찹쌀':'멥쌀'} · 누룩 ${r.nuruk}% · 입국 ${r.ipguk}%\n${a.changes.length?a.changes.map(x=>'- '+x).join('\n'):'- 배합은 그대로 두고 발효 온도·기간을 조절해 보세요'}`;
+  return `🔁 목표와 차이: ${a.off.map(x=>x.n+' '+x.verdict).join(', ')}\n👉 다음 배합 제안: ${r.type} · ${r.water}:${r.dil} · ${RK_NAME[r.riceKind]||''} · 누룩 ${r.nuruk}% · 입국 ${r.ipguk}%\n${a.changes.length?a.changes.map(x=>'- '+x).join('\n'):'- 배합은 그대로 두고 발효 온도·기간을 조절해 보세요'}`;
 }
 function refreshAdvice(){
   if(!CT||!CUR||!CUR.target)return;
@@ -918,7 +928,7 @@ function brewSuggested(){
   const a=adviceFor(CUR,CT);if(!a||a.ok)return;const r=a.next;
   const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="mbox"><div class="bell" style="animation:none">🍶</div><h3>언제 술을 빚을까요?</h3>
-  <p class="sub" style="margin:0 0 10px;font-size:13px">${r.type} · ${r.water}:${r.dil} · ${r.riceKind==='chap'?'찹쌀':'멥쌀'} · 누룩 ${r.nuruk}% · 입국 ${r.ipguk}%</p>
+  <p class="sub" style="margin:0 0 10px;font-size:13px">${r.type} · ${r.water}:${r.dil} · ${RK_NAME[r.riceKind]||''} · 누룩 ${r.nuruk}% · 입국 ${r.ipguk}%</p>
   <label class="f" style="text-align:left">밑술 빚는 날짜</label><input type="date" id="brewDate" value="${today()}">
   <p class="sub" style="font-size:12px;margin:6px 0 12px;text-align:left">덧술·채주 예정일은 이 날짜를 기준으로 자동으로 잡혀요.</p>
   <div style="display:flex;gap:8px"><button class="btn block" id="bdCancel" style="margin:0">취소</button><button class="btn pri block" id="bdOk" style="margin:0">이 날짜로 빚기</button></div></div>`;
@@ -938,7 +948,7 @@ function applyRec(r){
   r=r||CUR.wish.rec;if(!r)return;
   if(!TYPES.includes(r.type)){toast('술 종류를 읽을 수 없어요');return}
   recordTarget(r.by==='claude'?'Claude 추천':'앱 추천',r);
-  CUR.type=r.type;Object.assign(CUR.plan,{water:num(r.water),dil:num(r.dil),nuruk:num(r.nuruk),ipguk:num(r.ipguk),riceKind:r.riceKind==='mep'?'mep':'chap'});
+  CUR.type=r.type;Object.assign(CUR.plan,{water:num(r.water),dil:num(r.dil),nuruk:num(r.nuruk),ipguk:num(r.ipguk),riceKind:rkNorm(r.riceKind)});
   if(!CUR.plan.waterKind)CUR.plan.waterKind='tap';
   CUR.plan.applied=false;
   FOLD[CUR.id+':wish']=false;FOLD[CUR.id+':plan']=true;
@@ -959,7 +969,7 @@ function wishCard(b){
   ${b.target&&wishDiffers(b)?'<div class="wdiff">⚠️ 지금 입력한 맛이 오른쪽 <b>목표한 맛</b>과 달라요. 배합 추천을 다시 받아 <b>배합 계산기에 반영</b>하거나, Claude 답을 <b>배합 계산기에 자동 반영</b>하면 목표가 바뀌어요.</div>':''}
   <p class="sub" style="font-size:12px;margin:6px 2px 0"><b>배합 계산기에 반영</b>(또는 Claude 답을 <b>자동 반영</b>)하면 지금 맛 세기가 <b>목표한 맛</b>으로 자동 기록돼요. 나중에 맛 평가와 비교해 볼 수 있어요.</p>
   ${r?`<div class="rec"><div class="rh">추천 배합</div>
-    <div class="rgrid"><div><small>종류</small><b>${r.type}</b></div><div><small>물:가수</small><b>${r.water}:${r.dil}</b></div><div><small>쌀</small><b>${r.riceKind==='chap'?'찹쌀':'멥쌀'}</b></div><div><small>누룩</small><b>${r.nuruk}%</b></div><div><small>입국</small><b>${r.ipguk}%</b></div></div>
+    <div class="rgrid"><div><small>종류</small><b>${r.type}</b></div><div><small>물:가수</small><b>${r.water}:${r.dil}</b></div><div><small>쌀</small><b>${RK_NAME[r.riceKind]||''}</b></div><div><small>누룩</small><b>${r.nuruk}%</b></div><div><small>입국</small><b>${r.ipguk}%</b></div></div>
     
     <ul>${(r.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
     <button class="btn pri block" onclick="applyRec()">⬇️ 배합 계산기에 반영</button>
@@ -979,7 +989,7 @@ function askText(b){
   const hist=state.batches.filter(o=>o!==b).map(o=>{const sc=o.tastings.map(tScore).filter(x=>x.done).map(x=>x.score);const pp=pastParams(o);const c=calc(o);
     const prof=o.tastings.length&&o.tastings[o.tastings.length-1].profile||{};
     const cm=o.target?compareTarget(o):null;
-    return pp?`- ${o.target?`[목표: ${o.target.text||WISH.map(([k,n])=>n+o.target.levels[k]).join('/')}${cm&&cm.hit!=null?` → 실제 적중 ${cm.hit}%: `+cm.rows.filter(r=>r.act!=null).map(r=>r.n+' '+r.verdict).join(', '):''}] `:''}${o.type}, 물:가수 ${pp.water}:${pp.dil}, ${pp.riceKind==='chap'?'찹쌀':'멥쌀'}, 누룩 ${c.rice?(c.nuruk/c.rice*100).toFixed(1):'?'}%, 입국 ${c.rice?(c.ipguk/c.rice*100).toFixed(1):'?'}%${c.ferment!=null?', 발효 '+c.ferment+'일':''}${c.abv2?', 도수 '+c.abv2+'%':''}${sc.length?', 맛 점수 '+Math.max(...sc)+'점':''}${Object.keys(prof).length?', 맛 프로필 '+PROFILE.filter(([k])=>prof[k]).map(([k,n])=>n+prof[k]).join('/'):''}${o.tastings.length&&o.tastings[o.tastings.length-1].memo?', 메모: '+o.tastings[o.tastings.length-1].memo:''}`:null}).filter(Boolean).slice(0,10);
+    return pp?`- ${o.target?`[목표: ${o.target.text||WISH.map(([k,n])=>n+o.target.levels[k]).join('/')}${cm&&cm.hit!=null?` → 실제 적중 ${cm.hit}%: `+cm.rows.filter(r=>r.act!=null).map(r=>r.n+' '+r.verdict).join(', '):''}] `:''}${o.type}, 물:가수 ${pp.water}:${pp.dil}, ${RK_NAME[pp.riceKind]||''}, 누룩 ${c.rice?(c.nuruk/c.rice*100).toFixed(1):'?'}%, 입국 ${c.rice?(c.ipguk/c.rice*100).toFixed(1):'?'}%${c.ferment!=null?', 발효 '+c.ferment+'일':''}${c.abv2?', 도수 '+c.abv2+'%':''}${sc.length?', 맛 점수 '+Math.max(...sc)+'점':''}${Object.keys(prof).length?', 맛 프로필 '+PROFILE.filter(([k])=>prof[k]).map(([k,n])=>n+prof[k]).join('/'):''}${o.tastings.length&&o.tastings[o.tastings.length-1].memo?', 메모: '+o.tastings[o.tastings.length-1].memo:''}`:null}).filter(Boolean).slice(0,10);
   return `나는 집에서 전통 막걸리(가양주)를 빚고 있어. 원하는 술맛에 맞는 배합을 추천해줘.
 
 [원하는 술맛]
@@ -990,7 +1000,7 @@ ${w.text||'(문장 없음)'}
 - 술 종류: 단양주·이양주·삼양주·사양주·오양주 중 선택
 - 물:가수 비율은 쌀 총량 대비 %이고, 다음 중에서만 골라줘: ${PRESETS.map(p=>p.join(':')).join(', ')}
 - 누룩은 쌀 대비 7~10%, 입국은 0~3% 범위
-- 쌀은 찹쌀(chap) 또는 멥쌀(mep) 중 하나
+- 쌀은 찹쌀(chap), 멥쌀(mep), 멥쌀+찹쌀(mix: 멥쌀:찹쌀=2:1, 단계별 쌀은 균등, 찹쌀은 마지막 덧술부터 채우고 넘치면 직전 단계로) 중 하나
 - 덧술은 1주 간격
 
 [지금까지 내 기록]
@@ -1016,7 +1026,7 @@ function parseAi(text){
 }
 function tryApplyAi(text){
   const o=parseAi(text);if(!o)return false;
-  const c={type:o.type,water:num(o.water),dil:num(o.dil),riceKind:o.riceKind==='mep'?'mep':'chap',nuruk:num(o.nuruk)||9,ipguk:num(o.ipguk)};
+  const c={type:o.type,water:num(o.water),dil:num(o.dil),riceKind:rkNorm(o.riceKind),nuruk:num(o.nuruk)||9,ipguk:num(o.ipguk)};
   const r={...c,reasons:o.reason?['💬 Claude: '+o.reason]:[],pred:predict(c),by:'claude'};
   CUR.wish=CUR.wish||{};CUR.wish.rec=r;applyRec(r);return true;
 }
@@ -1034,7 +1044,7 @@ async function pasteClaude(){
   }
 }
 function showAiPrev(){const el=$('#aiPrev');if(!el)return;const o=parseAi($('#aiAns').value);
-  el.innerHTML=o?`✔️ 읽은 배합: <b>${esc(o.type)} · ${num(o.water)}:${num(o.dil)} · ${o.riceKind==='mep'?'멥쌀':'찹쌀'} · 누룩 ${num(o.nuruk)||9}% · 입국 ${num(o.ipguk)}%</b>`:($('#aiAns').value?'⚠️ 아직 배합을 찾지 못했어요':'');el.className='aiprev'+(o?' ok':'')}
+  el.innerHTML=o?`✔️ 읽은 배합: <b>${esc(o.type)} · ${num(o.water)}:${num(o.dil)} · ${RK_NAME[o.riceKind]||''} · 누룩 ${num(o.nuruk)||9}% · 입국 ${num(o.ipguk)}%</b>`:($('#aiAns').value?'⚠️ 아직 배합을 찾지 못했어요':'');el.className='aiprev'+(o?' ok':'')}
 function applyAiBtn(){const t=$('#aiAns').value;if(!t){pasteClaude();return}if(!tryApplyAi(t))toast('답에서 배합을 찾지 못했어요. Claude 답의 코드 칸을 복사해 주세요')}
 function setRatio(w,d){CUR.plan.water=w;CUR.plan.dil=d;touch();rerenderKeep()}
 function setPlan(k,v){CUR.plan[k]=v;touch();rerenderKeep()}
@@ -1048,9 +1058,9 @@ function applyPlan(silent){
   if(has&&!confirm('이미 입력된 쌀·물·누룩·입국 양을 계산값으로 바꿀까요?'))return;
   // 직접 입력한 배합이면 예상 맛을 목표한 맛으로 자동 기록 (추천 배합이면 이미 기록됨)
   const tgAuto=!fromRecommend(b)&&planRecipe(b);if(tgAuto)planTasteToTarget();
-  const rk=p.riceKind==='chap'?'chap':'mep',ro=rk==='chap'?'mep':'chap';
+  const rk=p.riceKind==='chap'?'chap':'mep',ro=rk==='chap'?'mep':'chap',mix=p.riceKind==='mix';
   const wk=['tap','mak'].includes(p.waterKind)?p.waterKind:'bottle';
-  c.act.forEach((s,i)=>{const x=b.stages[s.k]=b.stages[s.k]||{};x[rk]=c.rice[i];x[ro]='';WATER_KINDS.forEach(([k])=>x[k]='');x[wk]=c.water[i]||'';x.waterKind=wk;if(wk!=='bottle')x.bottleBrand='';x.nuruk=c.nuruk[i]||'';x.ipguk=c.ipguk[i]||''});
+  c.act.forEach((s,i)=>{const x=b.stages[s.k]=b.stages[s.k]||{};if(mix){x.mep=c.mep[i]||'';x.chap=c.chap[i]||''}else{x[rk]=c.rice[i];x[ro]=''}WATER_KINDS.forEach(([k])=>x[k]='');x[wk]=c.water[i]||'';x.waterKind=wk;if(wk!=='bottle')x.bottleBrand='';x.nuruk=c.nuruk[i]||'';x.ipguk=c.ipguk[i]||''});
   b.chaeju.water=c.dil||'';if(num(b.chaeju.orig))b.chaeju.amount=num(b.chaeju.orig)+num(b.chaeju.water);p.applied=true;
   const {rice,applied,...keep}=p;state.settings.plan=keep;
   touch();if(!silent){rerenderKeep();toast(tgAuto?'각 단계에 입력하고, 예상 맛을 목표한 맛으로 기록했어요 🎯':'각 단계에 입력했어요')}
@@ -1077,7 +1087,7 @@ function isAuto(b){return b.nameAuto===true||(b.nameAuto===undefined&&!b.name)}
 function autoName(b){
   const d=b.stages.mit&&b.stages.mit.date;const m=d?d.slice(0,4)+'년 '+(+d.slice(5,7))+'월 ':'';
   let ch=0,me=0;activeStages(b).forEach(s=>{const x=b.stages[s.k]||{};ch+=num(x.chap);me+=num(x.mep)});
-  const rk=ch&&me?'찹쌀·멥쌀':ch?'찹쌀':me?'멥쌀':(b.plan&&b.plan.riceKind==='chap'?'찹쌀':b.plan&&b.plan.riceKind==='mep'?'멥쌀':'');
+  const rk=ch&&me?'멥쌀·찹쌀':ch?'찹쌀':me?'멥쌀':(b.plan&&b.plan.riceKind==='mix'?'멥쌀·찹쌀':b.plan&&b.plan.riceKind==='chap'?'찹쌀':b.plan&&b.plan.riceKind==='mep'?'멥쌀':'');
   const base=TYPES.includes(b.type)?`${m}${rk?rk+' ':''}${b.type}`:`${m}새 술`;const used=new Set(state.batches.filter(x=>x!==b).map(x=>x.name));
   // 비율: 배합 계산기로 입력했으면 그 비율, 아니면 실제 입력한 쌀·물·가수량으로 계산
   const p=b.plan,c=calc(b);let ratio='';
