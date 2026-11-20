@@ -287,6 +287,8 @@ i.act{background:var(--acc);border:2px solid #fff;box-sizing:border-box;box-shad
 /* 대시보드 배치 */
 .dash{display:block}
 .col .lsec{margin-top:16px}
+.bcn{font-weight:700}.bdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 4px 1px 0;vertical-align:middle}
+.upr .un small .bcn{font-weight:600}
 .uplist{border-top:1px dashed var(--line);margin-top:4px;padding-top:6px}.uph{font-size:12.5px;font-weight:700;color:var(--sub);margin:0 2px 4px}
 .upr{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:8px;cursor:pointer;font-size:13px}.upr:hover{background:rgba(0,0,0,.04)}
 .upr .ud{flex:0 0 auto;min-width:68px;font-weight:700;color:#2f5fb3;font-variant-numeric:tabular-nums}.upr .un{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.upr .un small{color:var(--sub)}
@@ -413,7 +415,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v73';
+const APP_VERSION='v74';
 const APP_DATE='2026.11.20';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -586,6 +588,11 @@ function renderList(){
     else if(!c.start||c.start>today())G.plan.push(b);
     else{G.brew.push(b);if(nt&&nt.diff!=null){if(nt.diff<=0)G.todo.push({b,nt});else if(nt.diff<=3)G.soon.push({b,nt})}}
   });
+  G.brew.sort((x,y)=>(y.stages.mit.date||'').localeCompare(x.stages.mit.date||''));
+  G.plan.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
+  const BCOL=['#d9480f','#1c7ed6','#2b8a3e','#ae3ec9','#e8590c','#0c8599','#c2255c','#5f3dc4','#a07800','#495057'];
+  const CM={};[...G.brew,...G.plan].forEach((b,i)=>CM[b.id]=BCOL[i%BCOL.length]);
+  const cname=(b,full)=>`<span class="bcn" style="color:${CM[b.id]||'inherit'}"><i class="bdot" style="background:${CM[b.id]||'transparent'}"></i>${full?esc(b.name||'(이름 없음)'):shortName(b)}</span>`;
   if(bs.length){
   h+='<div class="dash">';
   // 할 일 (지금 + 앞으로)
@@ -594,23 +601,21 @@ function renderList(){
   const up=[];bs.forEach(b=>{if(isDone(b.chaeju))return;stepList(b).forEach(st=>{const d=st.x.date;if(!d||d<=today())return;if(st.x.done&&st.k!=='mit')return;up.push({b,n:st.k==='mit'?'밑술 빚기':st.n,date:d,diff:days(today(),d)})})});
   up.sort((x,y)=>x.date.localeCompare(y.date));
   h+=`<div class="col">`+sec('🔔','할 일',G.todo.length+up.length,`<button class="btn sm keep" style="margin-left:auto" onclick="exportIcs()">📅 캘린더</button>`);
-  G.todo.forEach(({b,nt})=>{h+=`<div class="card todo ${nt.diff<0?'od':''}" onclick="go('b-${b.id}')"><div style="min-width:0"><b>${nt.n}</b><div class="sub tn">${esc(b.name)}</div></div><div class="d">${dueLabel(nt.diff)}<br><span>${md(nt.date)}</span></div></div>`});
+  G.todo.forEach(({b,nt})=>{h+=`<div class="card todo ${nt.diff<0?'od':''}" onclick="go('b-${b.id}')"><div style="min-width:0"><b>${nt.n}</b><div class="sub tn">${cname(b,1)}</div></div><div class="d">${dueLabel(nt.diff)}<br><span>${md(nt.date)}</span></div></div>`});
   if(!G.todo.length)h+=`<div class="lempty">오늘 할 일이 없어요 🙂</div>`;
-  if(up.length){const LIM=8;h+=`<div class="uplist"><div class="uph">📆 앞으로 할 일</div>${up.map((u,i)=>`<div class="upr ${u.diff<=3?'near':''} ${i>=LIM?'more':''}" onclick="go('b-${u.b.id}')"><span class="ud">${md(u.date)}</span><span class="un"><b>${u.n}</b> <small>${shortName(u.b)}</small></span><em>D-${u.diff}</em></div>`).join('')}${up.length>LIM?`<button class="upmore" onclick="event.stopPropagation();this.parentElement.classList.add('all');this.remove()">＋ ${up.length-LIM}개 더 보기</button>`:''}</div>`}
+  if(up.length){const LIM=8;h+=`<div class="uplist"><div class="uph">📆 앞으로 할 일</div>${up.map((u,i)=>`<div class="upr ${u.diff<=3?'near':''} ${i>=LIM?'more':''}" onclick="go('b-${u.b.id}')"><span class="ud">${md(u.date)}</span><span class="un"><b>${u.n}</b> <small>${cname(u.b)}</small></span><em>D-${u.diff}</em></div>`).join('')}${up.length>LIM?`<button class="upmore" onclick="event.stopPropagation();this.parentElement.classList.add('all');this.remove()">＋ ${up.length-LIM}개 더 보기</button>`:''}</div>`}
   h+='</div>';
   // 발효 중
-  G.brew.sort((x,y)=>(y.stages.mit.date||'').localeCompare(x.stages.mit.date||''));
   h+=`<div class="col">`+sec('🫧','발효 중',G.brew.length)+'<div class="mgrid">';
   G.brew.forEach(b=>{const c=calc(b),sl=stepList(b),dn=sl.filter(x=>isDone(x.x)).length,nt=nextTask(b);
     const nx=nt&&nt.diff!=null?`<small class="nx ${nt.diff<0?'nxo':nt.diff===0?'nxt':''}">${nt.diff===0?'오늘 '+nt.n:nt.diff<0?nt.n+' '+dueLabel(nt.diff):nt.n+' '+dueLabel(nt.diff)}</small>`:'';
-    h+=`<div class="card mini" onclick="go('b-${b.id}')">${lockBtn(b)}<span class="tbadge">${b.type||'종류 미정'}</span><div class="mn">${shortName(b)}</div>
+    h+=`<div class="card mini" style="border-left:4px solid ${CM[b.id]}" onclick="go('b-${b.id}')">${lockBtn(b)}<span class="tbadge">${b.type||'종류 미정'}</span><div class="mn">${cname(b)}</div>
     <div class="prog"><b style="width:${Math.round(dn/sl.length*100)}%"></b></div><div class="mf"><small>밑술 ${c.start.slice(5).replace('-','/')} · ${dn}/${sl.length} 단계 · D+${days(c.start,today())}</small>${nx}</div></div>`});
   h+='</div>';if(!G.brew.length)h+=`<div class="lempty">발효 중인 술이 없어요</div>`;h+='</div>';
   // 술빚기 예정
-  G.plan.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
   h+=`<div class="col cplan">`+sec('🍚','술빚기 예정',G.plan.length)+'<div class="pls">';
   G.plan.forEach(b=>{const d=b.stages.mit&&b.stages.mit.date;const dd=d?days(today(),d):null;
-    h+=`<div class="card done" onclick="go('b-${b.id}')"><div class="sbox plan">${d?d.slice(5).replace('-','/'):'미정'}</div><div style="min-width:0;flex:1"><div class="n">${esc(b.name||'(이름 없음)')}</div><div class="m">${dd!=null?(dd===0?'오늘 밑술':'밑술 '+md(d)+' · '+dd+'일 후'):'밑술 날짜 미정'}${b.target&&b.target.text?` · “${esc(b.target.text)}”`:''}</div></div>${lockBtn(b)}</div>`});
+    h+=`<div class="card done" style="border-left:4px solid ${CM[b.id]}" onclick="go('b-${b.id}')"><div class="sbox plan">${d?d.slice(5).replace('-','/'):'미정'}</div><div style="min-width:0;flex:1"><div class="n">${cname(b,1)}</div><div class="m">${dd!=null?(dd===0?'오늘 밑술':'밑술 '+md(d)+' · '+dd+'일 후'):'밑술 날짜 미정'}${b.target&&b.target.text?` · “${esc(b.target.text)}”`:''}</div></div>${lockBtn(b)}</div>`});
   h+='</div>';if(!G.plan.length)h+=`<div class="lempty">예정된 술이 없어요</div>`;h+='</div>';
   h+='</div>';
   // 완성
