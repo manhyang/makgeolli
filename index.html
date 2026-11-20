@@ -288,7 +288,7 @@ i.act{background:var(--acc);border:2px solid #fff;box-sizing:border-box;box-shad
 .dash{display:block}
 .col .lsec{margin-top:16px}
 .bcn{font-weight:700}.bdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 4px 1px 0;vertical-align:middle}
-.upr .un small .bcn{font-weight:600}
+.upr .un small .bcn{font-weight:700}
 .uplist{border-top:1px dashed var(--line);margin-top:4px;padding-top:6px}.uph{font-size:12.5px;font-weight:700;color:var(--sub);margin:0 2px 4px}
 .upr{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:8px;cursor:pointer;font-size:13px}.upr:hover{background:rgba(0,0,0,.04)}
 .upr .ud{flex:0 0 auto;min-width:68px;font-weight:700;color:#2f5fb3;font-variant-numeric:tabular-nums}.upr .un{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.upr .un small{color:var(--sub)}
@@ -415,7 +415,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v76';
+const APP_VERSION='v77';
 const APP_DATE='2026.11.20';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -590,7 +590,7 @@ function renderList(){
   });
   G.brew.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
   G.plan.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
-  const BCOL=['#d9480f','#1c7ed6','#2b8a3e','#ae3ec9','#e8590c','#0c8599','#c2255c','#5f3dc4','#a07800','#495057'];
+  const BCOL=['#1971c2','#e03131','#2f9e44','#9c36b5','#d97706','#0c8599','#d6336c','#5c940d','#5f3dc4','#343a40'];
   const CM={};[...G.brew,...G.plan].forEach((b,i)=>CM[b.id]=BCOL[i%BCOL.length]);
   const cname=(b,full)=>`<span class="bcn" style="color:${CM[b.id]||'inherit'}"><i class="bdot" style="background:${CM[b.id]||'transparent'}"></i>${full?esc(b.name||'(이름 없음)'):shortName(b)}</span>`;
   if(bs.length){
