@@ -415,7 +415,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 <script>
 const KEY='makgeolli_log_v1';
 const APP_NAME='만향도가 막걸리 양조일지';
-const APP_VERSION='v74';
+const APP_VERSION='v75';
 const APP_DATE='2026.11.20';
 const PHOTO_1='';
 const DAUGHTERS=['',''];
@@ -588,7 +588,7 @@ function renderList(){
     else if(!c.start||c.start>today())G.plan.push(b);
     else{G.brew.push(b);if(nt&&nt.diff!=null){if(nt.diff<=0)G.todo.push({b,nt});else if(nt.diff<=3)G.soon.push({b,nt})}}
   });
-  G.brew.sort((x,y)=>(y.stages.mit.date||'').localeCompare(x.stages.mit.date||''));
+  G.brew.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
   G.plan.sort((x,y)=>(x.stages.mit.date||'9').localeCompare(y.stages.mit.date||'9'));
   const BCOL=['#d9480f','#1c7ed6','#2b8a3e','#ae3ec9','#e8590c','#0c8599','#c2255c','#5f3dc4','#a07800','#495057'];
   const CM={};[...G.brew,...G.plan].forEach((b,i)=>CM[b.id]=BCOL[i%BCOL.length]);
